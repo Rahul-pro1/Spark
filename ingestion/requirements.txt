@@ -1,0 +1,5 @@
+kafka-python
+requests
+praw
+qdrant-client
+sentence-transformers

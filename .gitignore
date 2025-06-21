@@ -1,0 +1,17 @@
+# Ignore Python cache folders
+__pycache__/
+*.py[cod]
+
+# Ignore environment files
+.env
+.env.*
+
+# Bytecode and logs
+*.log
+*.sqlite3
+*.db
+*.egg-info/
+
+# VS Code and other IDE configs
+.vscode/
+.idea/
