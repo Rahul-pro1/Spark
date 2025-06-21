@@ -1,6 +1,9 @@
 from qdrant_client import QdrantClient
-from qdrant_client.models import PointStruct, VectorParams, Distance, Filter, FieldCondition, MatchValue, Range
+from qdrant_client.models import (
+    PointStruct, VectorParams, Distance, Filter, FieldCondition, MatchValue, Range
+)
 import uuid
+import datetime
 
 client = QdrantClient(host="localhost", port=6333)
 
@@ -21,14 +24,22 @@ def insert_document(collection_name, vector, payload):
 
 def search(collection_name, query_vector, location=None, since=None, limit=5):
     filters = []
+
     if location:
-        filters.append(FieldCondition(key="location", match=MatchValue(value=location)))
-    if since:
-        filters.append(FieldCondition(key="timestamp", range=Range(gte=since)))
+        filters.append(
+            FieldCondition(key="location", match=MatchValue(value=location))
+        )
     
+    if since:
+        if isinstance(since, str):
+            since = datetime.datetime.strptime(since, "%Y-%m-%d").timestamp()
+        filters.append(
+            FieldCondition(key="timestamp", range=Range(gte=since))
+        )
+
     return client.search(
         collection_name=collection_name,
         query_vector=query_vector,
         limit=limit,
-        filter=Filter(must=filters)
+        query_filter=Filter(must=filters) if filters else None
     )

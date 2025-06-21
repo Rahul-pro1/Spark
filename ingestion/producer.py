@@ -20,7 +20,7 @@ producer = KafkaProducer(
 )
 
 def fetch_news_articles(query="heatwave", location="Texas"):
-    url = f"https://gnews.io/api/v4/search?q={query}%20{location}&lang=en&country=us&max=5&apikey={API_KEY}"
+    url = f"https://gnews.io/api/v4/search?q={query}%20{location}&lang=en&country=us&max=5&apikey={GNEWS_API_KEY}"
     res = requests.get(url)
     articles = res.json().get("articles", [])
     docs = []
@@ -36,6 +36,8 @@ def fetch_news_articles(query="heatwave", location="Texas"):
 
 def fetch_reddit_trends(subreddit_name="Austin"):
     reddit = praw.Reddit(
+        client_id=REDDIT_CLIENT_ID,
+        client_secret=REDDIT_CLIENT_SECRET,
         user_agent="SmartDemandSenseBot"
     )
     subreddit = reddit.subreddit(subreddit_name)
@@ -51,7 +53,7 @@ def fetch_reddit_trends(subreddit_name="Austin"):
     return docs
 
 def fetch_weather_alerts(city="Dallas"):
-    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={OPENWEATHER_API_KEY}&units=metric"
     res = requests.get(url).json()
     desc = res['weather'][0]['description']
     temp = res['main']['temp']
