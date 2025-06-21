@@ -2,6 +2,9 @@ from embeddings.embedder import Embedder
 from vector_store.client import create_collection, search
 from llm.llm import generate_reasoning
 
+collection = "smart_demand_docs"
+create_collection(collection)
+
 query = "What is the expected demand for Gatorade in Texas this week?"
 embedder = Embedder()
 print("Embedding...")
