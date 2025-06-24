@@ -4,6 +4,15 @@ from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
 from qdrant_client.models import PointStruct
 import uuid
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from backend.vector_store.client import create_collection
+
+# collection = "smart_demand_docs"
+# create_collection(collection)
 
 consumer = KafkaConsumer(
     "demandsense-data",
@@ -11,7 +20,7 @@ consumer = KafkaConsumer(
     value_deserializer=lambda x: json.loads(x.decode("utf-8"))
 )
 
-qdrant = QdrantClient("localhost", port=6333)
+qdrant = QdrantClient("qdrant", port=6333)
 embedder = SentenceTransformer("all-MiniLM-L6-v2")
 
 for msg in consumer:

@@ -5,7 +5,7 @@ from qdrant_client.models import (
 import uuid
 import datetime
 
-client = QdrantClient(host="localhost", port=6333)
+client = QdrantClient(host="qdrant", port=6333)
 
 def create_collection(collection_name="smart_demand_docs", vector_size=384):
     if not client.collection_exists(collection_name):

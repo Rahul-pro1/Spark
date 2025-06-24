@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from embeddings.embedder import Embedder
-from vector_store.client import search
+from vector_store.client import create_collection, search
 from llm.llm import generate_reasoning
 
 app = FastAPI()
@@ -17,6 +17,9 @@ app.add_middleware(
 
 class QueryRequest(BaseModel):
     query: str
+
+collection = "smart_demand_docs"
+create_collection(collection)
 
 @app.post("/query")
 def query_handler(payload: QueryRequest):
