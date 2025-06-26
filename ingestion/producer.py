@@ -81,9 +81,9 @@ def produce():
             all_docs += fetch_news_articles(topic, loc)
             time.sleep(0.5) 
 
-    # for loc in CITIES:
-    #     all_docs += fetch_reddit_trends(loc)
-    #     time.sleep(10)
+    for loc in CITIES:
+        all_docs += fetch_reddit_trends(loc)
+        time.sleep(10)
 
     for city in CITIES:
         all_docs += fetch_weather_alerts(city)
