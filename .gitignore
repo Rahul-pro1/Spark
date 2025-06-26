@@ -12,6 +12,12 @@ __pycache__/
 *.db
 *.egg-info/
 
+# Ignore CSV files
+*.csv
+
+# Node.js dependencies
+node_modules/
+
 # VS Code and other IDE configs
 .vscode/
 .idea/
