@@ -15,12 +15,18 @@ def create_collection(collection_name="smart_demand_docs", vector_size=384):
         )
 
 def insert_document(collection_name, vector, payload):
+    if isinstance(payload.get("timestamp"), str):
+        payload["timestamp"] = datetime.datetime.strptime(payload["timestamp"], "%Y-%m-%d").timestamp()
+    elif isinstance(payload.get("timestamp"), datetime.datetime):
+        payload["timestamp"] = payload["timestamp"].timestamp()
+
     point = PointStruct(
         id=str(uuid.uuid4()),
         vector=vector,
         payload=payload
     )
     client.upsert(collection_name=collection_name, points=[point])
+
 
 def search(collection_name, query_vector, location=None, since=None, limit=5):
     filters = []

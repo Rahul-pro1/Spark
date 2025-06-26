@@ -20,7 +20,7 @@ consumer = KafkaConsumer(
     value_deserializer=lambda x: json.loads(x.decode("utf-8"))
 )
 
-qdrant = QdrantClient("qdrant", port=6333)
+qdrant = QdrantClient("localhost", port=6333)
 embedder = SentenceTransformer("all-MiniLM-L6-v2")
 
 for msg in consumer:

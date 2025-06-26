@@ -8,7 +8,8 @@ model = AutoModelForCausalLM.from_pretrained(MODEL_NAME)
 generator = pipeline("text-generation", model=model, tokenizer=tokenizer, device=-1)
 
 def generate_reasoning(query, context_docs):
-    context = "\n".join([doc.payload['text'] for doc in context_docs])
+    context = "\n".join([doc.payload.get('text', '') for doc in context_docs[:5]])
     prompt = f"""Context:\n{context}\n\nQuestion: {query}\n\nAnswer:"""
     output = generator(prompt, max_new_tokens=300, do_sample=True)[0]["generated_text"]
     return output.split("Answer:")[-1].strip()
+
