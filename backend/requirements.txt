@@ -9,3 +9,8 @@ uvicorn
 xgboost
 pandas
 joblib
+langchain
+langchain-google-genai
+dotenv
+matplotlib
+seaborn

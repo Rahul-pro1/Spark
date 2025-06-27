@@ -2,12 +2,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import pandas as pd
-
 from embeddings.embedder import Embedder
 from vector_store.client import create_collection, search
 from llm.llm import generate_reasoning
 from forecasting.forecast import forecast_sku_demand
 from explainability.explainer import extract_reasons
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI()
 

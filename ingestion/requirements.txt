@@ -3,3 +3,7 @@ requests
 praw
 qdrant-client
 sentence-transformers
+dotenv
+sys 
+os
+uuid

@@ -1,15 +1,37 @@
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+import os
+from dotenv import load_dotenv
+from langchain.prompts import PromptTemplate
+from langchain.chains import LLMChain
+from langchain_google_genai import ChatGoogleGenerativeAI
 
-MODEL_NAME = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"  # or "microsoft/phi-2"
+load_dotenv()
 
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-model = AutoModelForCausalLM.from_pretrained(MODEL_NAME)
+llm = ChatGoogleGenerativeAI(
+    model="models/gemini-2.5-flash",  
+    google_api_key=os.environ["GOOGLE_API_KEY"],
+    temperature=0.7,
+    convert_system_message_to_human=True,  
+)
 
-generator = pipeline("text-generation", model=model, tokenizer=tokenizer, device=-1)
+prompt = PromptTemplate(
+    input_variables=["context", "question"],
+    template="""
+You are a demand forecasting assistant. Your job is to use the obtained news, weather information, 
+past sales data and the current social media trends obtained from the context below to answer the user's query.
+
+Context:
+{context}
+
+Question:
+{question}
+
+Answer:
+"""
+)
+
+chain = LLMChain(llm=llm, prompt=prompt)
 
 def generate_reasoning(query, context_docs):
-    context = "\n".join([doc.payload.get('text', '') for doc in context_docs[:5]])
-    prompt = f"""Context:\n{context}\n\nQuestion: {query}\n\nAnswer:"""
-    output = generator(prompt, max_new_tokens=300, do_sample=True)[0]["generated_text"]
-    return output.split("Answer:")[-1].strip()
-
+    context = "\n".join([doc.payload.get("text", "") for doc in context_docs[:5]])
+    response = chain.run({"context": context, "question": query})
+    return response.strip()
