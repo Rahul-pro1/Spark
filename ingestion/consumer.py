@@ -8,11 +8,10 @@ import sys
 import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 from backend.vector_store.client import create_collection
 
-# collection = "smart_demand_docs"
-# create_collection(collection)
+collection = "smart_demand_docs"
+create_collection(collection)
 
 consumer = KafkaConsumer(
     "demandsense-data",
@@ -27,7 +26,7 @@ for msg in consumer:
     data = msg.value
     vector = embedder.encode(data["text"]).tolist()
     qdrant.upsert(
-        collection_name="smart_demand_docs",
+        collection_name=collection,
         points=[PointStruct(id=str(uuid.uuid4()), vector=vector, payload=data)]
     )
-    print(f"Stored doc from {data['location']}")
+    print(f"[Qdrant] Stored doc from {data['location']}, source={data['source']}")

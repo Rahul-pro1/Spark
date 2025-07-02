@@ -5,7 +5,7 @@ from qdrant_client.models import (
 import uuid
 import datetime
 
-client = QdrantClient(host="qdrant", port=6333)
+client = QdrantClient(host="localhost", port=6333)
 
 def create_collection(collection_name="smart_demand_docs", vector_size=384):
     if not client.collection_exists(collection_name):
@@ -27,22 +27,17 @@ def insert_document(collection_name, vector, payload):
     )
     client.upsert(collection_name=collection_name, points=[point])
 
-
 def search(collection_name, query_vector, location=None, since=None, limit=5):
     filters = []
 
     if location:
-        filters.append(
-            FieldCondition(key="location", match=MatchValue(value=location))
-        )
-    
+        filters.append(FieldCondition(key="location", match=MatchValue(value=location)))
+
     if since:
         if isinstance(since, str):
             since = datetime.datetime.strptime(since, "%Y-%m-%d").timestamp()
-        filters.append(
-            FieldCondition(key="timestamp", range=Range(gte=since))
-        )
-
+        filters.append(FieldCondition(key="timestamp", range=Range(gte=since)))
+        
     return client.search(
         collection_name=collection_name,
         query_vector=query_vector,

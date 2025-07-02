@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import pandas as pd
+import datetime
 from embeddings.embedder import Embedder
 from vector_store.client import create_collection, search
 from llm.llm import generate_reasoning
@@ -32,12 +33,14 @@ pos_df = pd.read_csv("forecasting/pos_data/pos_data.csv")
 
 @app.post("/query")
 def query_handler(payload: QueryRequest):
-    query = payload.query
+    query = f"sku_id: {payload.sku_id}, location: {payload.location}, forecast for demand"
     embedder = Embedder()
     query_vector = embedder.get_embedding(query)
-    results = search(collection, query_vector, location=payload.location)
 
-    answer = generate_reasoning(query, results)
+    since = (datetime.datetime.today() - datetime.timedelta(days=30)).strftime("%Y-%m-%d")
+    results = search(collection, query_vector, location=payload.location, since=since)
+
+    answer = generate_reasoning(payload.query, results)
     predicted_demand, confidence = forecast_sku_demand(payload.sku_id, results, pos_df)
     reasons = extract_reasons(results)
 
