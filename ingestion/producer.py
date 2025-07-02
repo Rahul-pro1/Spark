@@ -7,6 +7,11 @@ import pandas as pd
 import praw
 from kafka import KafkaProducer
 from dotenv import load_dotenv
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from backend.forecasting.generate_pos_data import generate
 
 load_dotenv()
 
