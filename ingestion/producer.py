@@ -74,7 +74,7 @@ def produce():
         print(f"[Kafka] Sent ({doc['source']}): {doc['text'][:80]}...")
 
     print(f"[✓] Published {len(all_docs)} documents to 'demandsense-data'.")
-    producer.flush(timeout=10)
+    producer.flush(timeout=60)
     producer.close()
 
 
