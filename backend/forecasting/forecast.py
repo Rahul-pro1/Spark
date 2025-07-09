@@ -3,69 +3,94 @@ import xgboost as xgb
 import os
 import joblib
 import datetime
-import matplotlib.pyplot as plt
-import seaborn as sns
+from prophet import Prophet
+from prophet.serialize import model_to_json, model_from_json
+import json
 
-MODEL_PATH = "xgb_model.joblib"
+MODEL_PATH_XGB = "xgb_model.joblib"
+MODEL_PATH_PROPHET_TEMPLATE = "prophet_model_{}.json"
 
-def train_model(historical_df):
+def train_xgb_model(historical_df):
     df = historical_df.copy()
     df['day_of_week'] = pd.to_datetime(df['date']).dt.dayofweek
-    df['past_7_day_avg'] = df.groupby(['store_id', 'sku_id'])['units_sold'].transform(
+    df['past_7_day_avg'] = df.groupby(['store_id', 'product_id'])['quantity'].transform(
         lambda x: x.shift(1).rolling(7).mean()
     )
     df = df.dropna()
     features = ['day_of_week', 'past_7_day_avg', 'temperature', 'social_mentions', 'news_mentions']
     X = df[features]
-    y = df['units_sold']
+    y = df['quantity']
     model = xgb.XGBRegressor(objective='reg:squarederror', n_estimators=100, max_depth=5)
     model.fit(X, y)
-    joblib.dump(model, MODEL_PATH)
+    joblib.dump(model, MODEL_PATH_XGB)
 
-def forecast_sku_demand(sku_id, context_docs, historical_df):
-    temperature = extract_signal("temperature", context_docs)
-    social_mentions = extract_signal("social", context_docs)
-    news_mentions = extract_signal("news", context_docs)
-    temperature = temperature or 25
-    social_mentions = social_mentions or 1
-    news_mentions = news_mentions or 1
-    sku_history = historical_df[historical_df["sku_id"] == sku_id].copy()
-    sku_history = sku_history.sort_values("date")
+def train_prophet_model(historical_df, sku_id):
+    sku_df = historical_df[historical_df["product_id"] == sku_id].copy()
+    if len(sku_df) < 7:
+        return None
+    df = sku_df[["date", "quantity", "temperature", "social_mentions", "news_mentions"]].copy()
+    df["ds"] = pd.to_datetime(df["date"])
+    df["y"] = df["quantity"]
+    df = df[["ds", "y", "temperature", "social_mentions", "news_mentions"]]
+    model = Prophet()
+    model.add_regressor("temperature")
+    model.add_regressor("social_mentions")
+    model.add_regressor("news_mentions")
+    model.fit(df)
+    model_path = MODEL_PATH_PROPHET_TEMPLATE.format(sku_id)
+    with open(model_path, "w") as f:
+        f.write(model_to_json(model))
+    return model
 
-    if len(sku_history) < 7:
-        past_7_day_avg = sku_history['units_sold'].mean()
-        confidence = 20
-    else:
-        past_7_day_avg = sku_history.tail(7)['units_sold'].mean()
-        confidence = min(100, len(sku_history) * 2)
-    today = datetime.datetime.today()
-    day_of_week = today.weekday()
-    features = pd.DataFrame([{
-        "day_of_week": day_of_week,
-        "past_7_day_avg": past_7_day_avg,
-        "temperature": temperature,
-        "social_mentions": social_mentions,
-        "news_mentions": news_mentions
-    }])
-    
-    if not os.path.exists(MODEL_PATH):
-        train_model(historical_df)
-    model = joblib.load(MODEL_PATH)
-    prediction = model.predict(features)[0]
-    return round(prediction), round(confidence)
+def forecast_sku_demand(sku_id, signals, historical_df):
+    temperature = signals.get("temperature", 25)
+    social_mentions = signals.get("social_mentions", 1)
+    news_mentions = signals.get("news_mentions", 1)
+    today = pd.to_datetime(datetime.datetime.today().date())
+    model_path = MODEL_PATH_PROPHET_TEMPLATE.format(sku_id)
 
-def extract_signal(signal_type, context_docs):
-    signal = 0
-    for doc in context_docs:
-        text = doc.payload.get("text", "").lower()
-        source = doc.payload.get("source", "")
-        if signal_type == "temperature" and "temperature" in text:
-            try:
-                temp = int("".join(filter(str.isdigit, text.split("temperature")[1][:5])))
-                signal = max(signal, temp)
-            except: pass
-        elif signal_type == "social" and source == "reddit":
-            signal += 1
-        elif signal_type == "news" and source == "news":
-            signal += 1
-    return signal or 1
+    try:
+        if not os.path.exists(model_path):
+            model = train_prophet_model(historical_df, sku_id)
+        else:
+            with open(model_path, "r") as f:
+                model = model_from_json(json.load(f))
+
+        future = pd.DataFrame([{
+            "ds": today,
+            "temperature": temperature,
+            "social_mentions": social_mentions,
+            "news_mentions": news_mentions
+        }])
+
+        forecast = model.predict(future)
+        yhat = forecast["yhat"].iloc[0]
+        return round(yhat), 90
+
+    except Exception as e:
+        if not os.path.exists(MODEL_PATH_XGB):
+            train_xgb_model(historical_df)
+        df = historical_df.copy()
+        df['day_of_week'] = pd.to_datetime(df['date']).dt.dayofweek
+        df['past_7_day_avg'] = df.groupby(['store_id', 'product_id'])['quantity'].transform(
+            lambda x: x.shift(1).rolling(7).mean()
+        )
+        df = df.dropna()
+        sku_df = df[df["product_id"] == sku_id].sort_values("date")
+        if len(sku_df) < 7:
+            past_7_day_avg = sku_df["quantity"].mean()
+            confidence = 20
+        else:
+            past_7_day_avg = sku_df.tail(7)["quantity"].mean()
+            confidence = min(100, len(sku_df) * 2)
+        day_of_week = today.weekday()
+        features = pd.DataFrame([{
+            "day_of_week": day_of_week,
+            "past_7_day_avg": past_7_day_avg,
+            "temperature": temperature,
+            "social_mentions": social_mentions,
+            "news_mentions": news_mentions
+        }])
+        model = joblib.load(MODEL_PATH_XGB)
+        prediction = model.predict(features)[0]
+        return round(prediction), round(confidence)

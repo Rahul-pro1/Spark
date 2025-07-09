@@ -5,7 +5,7 @@ import pandas as pd
 import datetime
 from embeddings.embedder import Embedder
 from vector_store.client import create_collection, search
-from llm.llm import generate_reasoning
+from llm.llm import generate_reasoning, extract_signals_with_llm
 from forecasting.forecast import forecast_sku_demand
 from explainability.explainer import extract_reasons
 from dotenv import load_dotenv
@@ -36,14 +36,12 @@ def query_handler(payload: QueryRequest):
     query = f"sku_id: {payload.sku_id}, location: {payload.location}, forecast for demand"
     embedder = Embedder()
     query_vector = embedder.get_embedding(query)
-
     since = (datetime.datetime.today() - datetime.timedelta(days=30)).strftime("%Y-%m-%d")
     results = search(collection, query_vector, location=payload.location, since=since)
-
+    signals = extract_signals_with_llm(results)
+    predicted_demand, confidence = forecast_sku_demand(payload.sku_id, signals, pos_df)
     answer = generate_reasoning(payload.query, results)
-    predicted_demand, confidence = forecast_sku_demand(payload.sku_id, results, pos_df)
     reasons = extract_reasons(results)
-
     return {
         "response": answer,
         "forecast": {
@@ -51,5 +49,6 @@ def query_handler(payload: QueryRequest):
             "predicted_demand": predicted_demand,
             "confidence": confidence
         },
-        "explanation": reasons
+        "explanation": reasons,
+        "signals": signals
     }

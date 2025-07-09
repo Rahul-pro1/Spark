@@ -1,4 +1,5 @@
 import { useState } from "react"
+import ReactMarkdown from 'react-markdown';
 
 export default function Home() {
   const [query, setQuery] = useState("")
@@ -82,7 +83,9 @@ export default function Home() {
         {response && (
           <div className="mt-8">
             <h2 className="text-xl font-semibold mb-2 text-gray-700">LLM Response</h2>
-            <p className="bg-gray-100 p-4 rounded-md text-gray-800">{response}</p>
+            <ReactMarkdown>
+              {response}
+            </ReactMarkdown>
           </div>
         )}
 

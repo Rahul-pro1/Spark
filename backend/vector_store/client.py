@@ -5,7 +5,29 @@ from qdrant_client.models import (
 import uuid
 import datetime
 
-client = QdrantClient(host="localhost", port=6333)
+from qdrant_client import QdrantClient
+from qdrant_client.models import VectorParams, Distance
+import time
+
+client = None
+
+def wait_for_qdrant(host="qdrant", port=6333, retries=10, delay=3):
+    global client
+    for attempt in range(retries):
+        try:
+            client = QdrantClient(
+                host=host,
+                port=port,
+                timeout=30.0  
+            )
+            client.get_collections()  
+            return client
+        except Exception as e:
+            print(f"[Qdrant] Waiting for Qdrant... ({attempt+1}/{retries})")
+            time.sleep(delay)
+    raise ConnectionError("Failed to connect to Qdrant after several retries.")
+
+client = wait_for_qdrant()
 
 def create_collection(collection_name="smart_demand_docs", vector_size=384):
     if not client.collection_exists(collection_name):

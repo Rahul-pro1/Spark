@@ -14,3 +14,5 @@ langchain-google-genai
 dotenv
 matplotlib
 seaborn
+prophet
+plotly>=5.0
