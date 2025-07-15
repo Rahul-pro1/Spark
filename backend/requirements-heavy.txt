@@ -1,0 +1,12 @@
+qdrant-client
+sentence-transformers
+transformers
+torch
+accelerate
+xgboost
+prophet
+langchain
+langchain-google-genai
+matplotlib
+seaborn
+plotly>=5.0
